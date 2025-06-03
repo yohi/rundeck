@@ -1,0 +1,29 @@
+description: Admin access control policy
+context:
+  application: 'rundeck'
+for:
+  resource:
+    - allow: '*' # allow all access
+  adhoc:
+    - allow: '*' # allow all adhoc access
+  job:
+    - allow: '*' # allow all job access
+  node:
+    - allow: '*' # allow all node access
+  project:
+    - allow: '*' # allow all project access
+  storage:
+    - allow: '*' # allow all storage access
+by:
+  group: ['admin', 'rundeck-admins']
+
+---
+
+description: Admin access control policy for system resources
+context:
+  application: 'rundeck'
+for:
+  resource:
+    - allow: '*' # allow all system access
+by:
+  group: ['admin', 'rundeck-admins'] 

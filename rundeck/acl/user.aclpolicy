@@ -1,0 +1,35 @@
+description: User access control policy
+context:
+  application: 'rundeck'
+for:
+  resource:
+    - equals:
+        kind: 'project'
+      allow: ['read', 'create'] # allow read and create project
+  adhoc:
+    - allow: ['read', 'run'] # allow read and run adhoc commands
+  job:
+    - allow: ['read', 'run'] # allow read and run jobs
+  node:
+    - allow: ['read', 'run'] # allow read and run on nodes
+  project:
+    - match:
+        name: '.*'
+      allow: ['read'] # allow read access to all projects
+  storage:
+    - allow: ['read'] # allow read storage
+by:
+  group: ['user', 'rundeck-users']
+
+---
+
+description: User access control policy for system resources
+context:
+  application: 'rundeck'
+for:
+  resource:
+    - equals:
+        kind: 'system'
+      allow: ['read'] # allow read system info
+by:
+  group: ['user', 'rundeck-users'] 
