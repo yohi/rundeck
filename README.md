@@ -62,7 +62,7 @@ aws sts get-caller-identity
 ### 2. 環境変数の設定
 
 ```bash
-# .envファイルを作成（setup-cognito.shで自動作成される）
+# .envファイルを作成
 cp .env.example .env
 
 # 必要に応じて値を編集
