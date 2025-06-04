@@ -4,7 +4,7 @@
 
 ## 🏗️ アーキテクチャ
 
-```
+```text
 [ユーザー] → [Nginx] → [OAuth2 Proxy] → [AWS Cognito] → [Rundeck]
 ```
 
@@ -16,7 +16,7 @@
 
 ## 📁 ファイル構成
 
-```
+```tree
 .
 ├── docker-compose.yml          # Docker Composeファイル
 ├── config/
@@ -78,8 +78,8 @@ docker-compose up -d
 
 ### 4. アクセス
 
-- **Rundeck**: http://localhost (Cognito認証経由)
-- **Health Check**: http://localhost/health
+- **Rundeck**: [http://localhost](http://localhost) (Cognito認証経由)
+- **Health Check**: [http://localhost/health](http://localhost/health)
 
 ## 🔧 設定詳細
 
