@@ -1,0 +1,148 @@
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:1.28.0
+    container_name: rundeck-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./config/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./config/nginx/conf.d:/etc/nginx/conf.d:ro
+    depends_on:
+      - oauth2-proxy
+    networks:
+      - rundeck-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  oauth2-proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.4.0
+    container_name: rundeck-oauth2-proxy
+    command:
+      # Provider settings
+      - --provider=oidc
+      - --oidc-issuer-url=https://cognito-idp.${AWS_REGION}.amazonaws.com/${COGNITO_USER_POOL_ID}
+      - --client-id=${COGNITO_CLIENT_ID}
+      - --client-secret=${COGNITO_CLIENT_SECRET}
+      
+      # Network settings
+      - --http-address=0.0.0.0:4180
+      - --redirect-url=http://localhost/oauth2/callback
+      - --cookie-domain=.localhost
+      - --cookie-secure=false
+      - --cookie-httponly=true
+      - --cookie-samesite=lax
+      
+      # Authentication settings
+      - --email-domain=*
+      - --scope=openid email profile
+      - --oidc-email-claim=email
+      - --oidc-groups-claim=cognito:groups
+      - --prefer-email-to-user=true
+      
+      # Header settings
+      - --set-xauthrequest=true
+      - --set-authorization-header=true
+      - --pass-user-headers=true
+      - --pass-access-token=true
+      - --pass-authorization-header=true
+      - --pass-host-header=true
+      
+      # Session settings
+      - --session-store-type=cookie
+      - --cookie-expire=24h
+      - --cookie-refresh=1h
+      - --cookie-name=_oauth2_proxy
+      
+      # UI settings
+      - --skip-provider-button=true
+      - --reverse-proxy=true
+      - --set-basic-auth=false
+      
+      # Upstream settings
+      - --upstream=static://202
+      
+      # Logging
+      - --request-logging=true
+      - --auth-logging=true
+    environment:
+      - OAUTH2_PROXY_COOKIE_SECRET=${OAUTH2_PROXY_COOKIE_SECRET}
+    ports:
+      - "4180:4180"
+    depends_on:
+      rundeck:
+        condition: service_healthy
+    networks:
+      - rundeck-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:4180/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  rundeck:
+    image: rundeck/rundeck:5.12.0-20250512
+    container_name: rundeck-server
+    environment:
+      # Basic Rundeck settings
+      - RUNDECK_GRAILS_URL=http://localhost
+      - RUNDECK_GUI_TITLE=Rundeck with AWS Cognito
+      - RUNDECK_GUI_BRAND=Cognito Rundeck
+      
+      # Preauthenticated mode settings
+      - RUNDECK_PREAUTH_ENABLED=true
+      - RUNDECK_PREAUTH_ATTRIBUTE_NAME=REMOTE_USER_GROUPS
+      - RUNDECK_PREAUTH_DELIMITER=,
+      - RUNDECK_PREAUTH_USERNAME_HEADER=X-Forwarded-User
+      - RUNDECK_PREAUTH_ROLES_HEADER=X-Forwarded-Roles
+      - RUNDECK_PREAUTH_REDIRECT_LOGOUT=false
+      - RUNDECK_PREAUTH_REDIRECT_URL=
+      - RUNDECK_PREAUTH_USERSYNC_ENABLED=true
+      
+      # Security authorization settings
+      - RUNDECK_SECURITY_AUTHORIZATION_PREAUTHENTICATED_ENABLED=true
+      - RUNDECK_SECURITY_AUTHORIZATION_PREAUTHENTICATED_DEFAULTROLES=admin,user,architect,deploy,build
+      - RUNDECK_SECURITY_AUTHORIZATION_FORM_ENABLED=false
+      - RUNDECK_SECURITY_AUTHORIZATION_PREAUTHENTICATED_USERNAMEHEADER=X-Forwarded-User
+      - RUNDECK_SECURITY_AUTHORIZATION_PREAUTHENTICATED_ROLESHEADER=X-Forwarded-Roles
+      - RUNDECK_SECURITY_AUTHORIZATION_PREAUTHENTICATED_ATTRIBUTENAME=REMOTE_USER_GROUPS
+      - RUNDECK_SECURITY_AUTHORIZATION_PREAUTHENTICATED_DELIMITER=,
+      
+      # ACL settings
+      - RUNDECK_ACL_DIR=/home/rundeck/server/config/acl
+    volumes:
+      - rundeck-data:/home/rundeck/server/data
+      - rundeck-logs:/home/rundeck/var/logs
+      - rundeck-plugins:/home/rundeck/libext
+      - ./config/rundeck/realm.properties:/home/rundeck/server/config/realm.properties:ro
+      - ./config/rundeck/acl:/home/rundeck/server/config/acl:ro
+    ports:
+      - "4440:4440"
+    networks:
+      - rundeck-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4440/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+volumes:
+  rundeck-data:
+    driver: local
+  rundeck-logs:
+    driver: local
+  rundeck-plugins:
+    driver: local
+
+networks:
+  rundeck-network:
+    driver: bridge
+    name: rundeck-network 
