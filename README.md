@@ -1,6 +1,131 @@
 # Rundeck with AWS Cognito Authentication
 
-このプロジェクトは、Docker ComposeでNginx、OAuth2 Proxy、RundeckでAWS Cognito認証を使用したセットアップです。
+このプロジェクトは、AWS CognitoでOAuth2認証を行い、**メールアドレスをユーザー名として使用する**Rundeckの設定です。
+
+## 特徴
+
+- ✅ AWS Cognito OAuth2認証
+- ✅ メールアドレスをRundeckのユーザー名として使用
+- ✅ Nginx + OAuth2 Proxy + Rundeck の構成
+- ✅ Docker Composeによる簡単なデプロイ
+
+## 必要な環境変数
+
+`.env`ファイルを作成して以下の値を設定してください：
+
+```bash
+# AWS Cognito設定
+AWS_REGION=your-aws-region
+COGNITO_USER_POOL_ID=your-user-pool-id
+COGNITO_CLIENT_ID=your-client-id
+COGNITO_CLIENT_SECRET=your-client-secret
+
+# OAuth2 Proxy設定
+OAUTH2_PROXY_COOKIE_SECRET=your-32-char-secret
+```
+
+## AWS Cognito設定
+
+### ユーザープールの作成
+
+1. AWS Cognito コンソールで新しいユーザープールを作成
+2. **「サインインオプション」で「メールアドレス」を選択**
+3. 「ユーザー名の要件」で「メールアドレスをユーザー名として使用」を有効化
+
+### アプリクライアントの設定
+
+1. ユーザープール内でアプリクライアントを作成
+2. 以下の設定を確認：
+   - **クライアントシークレットを生成**: 有効
+   - **許可されているOAuthフロー**: Authorization code grant
+   - **許可されているOAuthスコープ**: openid, email, profile
+   - **コールバックURL**: `http://localhost/oauth2/callback`
+
+## 起動方法
+
+```bash
+# コンテナを起動
+docker-compose up -d
+
+# ログを確認
+docker-compose logs -f
+```
+
+## アクセス
+
+- Rundeck: <http://localhost>
+- OAuth2 Proxy: <http://localhost:4180>
+- Rundeck直接アクセス: <http://localhost:4440>
+
+## 技術的な仕組み
+
+### メールアドレスをユーザー名として使用する方法
+
+1. **OAuth2 Proxy設定**:
+   - `--prefer-email-to-user=true`: メールアドレスを優先
+   - `--oidc-email-claim=email`: Cognitoのemailクレームを使用
+
+2. **Nginx設定**:
+   ```nginx
+   # メールアドレスが利用可能な場合はそれを使用、そうでなければユーザーIDを使用
+   map $upstream_http_x_auth_request_email $final_username {
+       default $upstream_http_x_auth_request_email;
+       "" $upstream_http_x_auth_request_user;
+   }
+   ```
+
+3. **Rundeck設定**:
+   - プリ認証モードを有効化
+   - `X-Forwarded-User`ヘッダーからユーザー名を取得
+
+### 認証フロー
+
+1. ユーザーが `http://localhost` にアクセス
+2. Nginxが認証をチェック（OAuth2 Proxy経由）
+3. 未認証の場合、Cognitoログインページにリダイレクト
+4. Cognitoでログイン成功後、OAuth2 Proxyがトークンを処理
+5. Nginxがメールアドレスを`X-Forwarded-User`ヘッダーに設定
+6. Rundeckがヘッダーからユーザー情報を取得してログイン
+
+## トラブルシューティング
+
+### データベースリセット
+
+既存のユーザー情報をクリアしたい場合：
+
+```bash
+# Rundeckを停止
+docker-compose stop rundeck
+
+# データベースファイルを削除
+docker run --rm -v saas-rundeck-v2_rundeck-data:/data alpine rm -f /data/grailsdb.*
+
+# Rundeckを再起動
+docker-compose start rundeck
+```
+
+### ログの確認
+
+```bash
+# OAuth2 Proxyのログ
+docker logs rundeck-oauth2-proxy
+
+# Nginxのログ
+docker logs rundeck-nginx
+
+# Rundeckのログ
+docker logs rundeck-server
+```
+
+## セキュリティ考慮事項
+
+- 本番環境では`OAUTH2_PROXY_COOKIE_SECRET`を安全に管理してください
+- HTTPSを使用することを強く推奨します
+- Cognitoのセキュリティ設定（MFA、パスワードポリシーなど）を適切に設定してください
+
+## ライセンス
+
+このプロジェクトはMITライセンスの下で公開されています。
 
 ## 🏗️ アーキテクチャ
 
