@@ -1,0 +1,110 @@
+description: User access control policy for Rundeck with Cognito
+context:
+  application: 'rundeck'
+for:
+  resource:
+    - equals:
+        kind: 'project'
+      allow: ['read', 'create'] # allow read and create project
+    - equals:
+        kind: 'system'
+      allow: ['read'] # allow read system info
+    - equals:
+        kind: 'plugin'
+      allow: ['read'] # allow read plugin info
+  adhoc:
+    - allow: ['read', 'run'] # allow read and run adhoc commands
+  job:
+    - allow: ['read', 'run'] # allow read and run jobs
+  node:
+    - allow: ['read', 'run'] # allow read and run on nodes
+  project:
+    - match:
+        name: '.*'
+      allow: ['read'] # allow read access to all projects
+  storage:
+    - allow: ['read'] # allow read storage
+by:
+  group: ['user', 'rundeck-users']
+
+---
+
+description: Default user access for all authenticated users
+context:
+  application: 'rundeck'
+for:
+  resource:
+    - equals:
+        kind: 'system'
+      allow: ['read'] # allow read system info
+    - equals:
+        kind: 'plugin'
+      allow: ['read'] # allow read plugin info
+  project:
+    - match:
+        name: '.*'
+      allow: ['read'] # allow read access to all projects
+by:
+  username: ['*'] # apply to all authenticated users
+
+---
+
+description: Operator access control policy
+context:
+  application: 'rundeck'
+for:
+  resource:
+    - equals:
+        kind: 'project'
+      allow: ['read', 'create', 'update'] # allow project management
+    - equals:
+        kind: 'system'
+      allow: ['read'] # allow read system info
+    - equals:
+        kind: 'plugin'
+      allow: ['read'] # allow read plugin info
+  adhoc:
+    - allow: ['read', 'run'] # allow adhoc execution
+  job:
+    - allow: ['read', 'run'] # 有効なアクションのみに修正
+  node:
+    - allow: ['read', 'run'] # allow node operations
+  project:
+    - match:
+        name: '.*'
+      allow: ['read', 'update'] # または適切なアクションに置き換え
+  storage:
+    - allow: ['read', 'run'] # 有効なアクションのみに修正
+by:
+  group: ['deploy', 'build', 'rundeck-operators']
+
+---
+
+description: Architect access control policy
+context:
+  application: 'rundeck'
+for:
+  resource:
+    - equals:
+        kind: 'project'
+      allow: ['read', 'create', 'update', 'delete'] # allow full project management
+    - equals:
+        kind: 'system'
+      allow: ['read'] # allow read system info
+    - equals:
+        kind: 'plugin'
+      allow: ['read'] # allow read plugin info
+  adhoc:
+    - allow: ['read', 'run'] # allow adhoc execution
+  job:
+    - allow: ['read', 'run', 'create', 'update', 'delete'] # allow full job management
+  node:
+    - allow: ['read', 'run'] # 有効なアクションのみに修正
+  project:
+    - match:
+        name: '.*'
+      allow: ['read', 'admin']
+  storage:
+    - allow: ['read', 'create', 'update', 'delete'] # allow full storage management
+by:
+  group: ['architect', 'rundeck-architects'] 
