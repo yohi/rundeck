@@ -1,0 +1,48 @@
+description: Admin access control policy for Rundeck with Cognito
+context:
+  application: 'rundeck'
+for:
+  resource:
+    - allow: '*' # allow all resource access
+  adhoc:
+    - allow: '*' # allow all adhoc access
+  job:
+    - allow: '*' # allow all job access
+  node:
+    - allow: '*' # allow all node access
+  project:
+    - allow: '*' # allow all project access
+  storage:
+    - allow: '*' # allow all storage access
+by:
+  group: ['admin', 'rundeck-admins']
+
+---
+
+description: Admin system access control policy
+context:
+  application: 'rundeck'
+for:
+  resource:
+    - equals:
+        kind: 'system'
+      allow: '*' # allow all system access
+    - equals:
+        kind: 'plugin'
+      allow: '*' # allow all plugin access
+    - equals:
+        kind: 'project'
+      allow: '*' # allow all project access
+by:
+  group: ['admin', 'rundeck-admins']
+
+---
+
+description: Admin wildcard access for all resources
+context:
+  application: 'rundeck'
+for:
+  resource:
+    - allow: '*' # allow all access
+by:
+  group: ['admin', 'rundeck-admins'] 

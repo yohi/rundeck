@@ -2,9 +2,10 @@
 .env
 
 # Docker volumes
-volumes/
+data/
 
 # Logs
+logs/
 *.log
 
 # OS generated files
@@ -14,4 +15,14 @@ volumes/
 .Spotlight-V100
 .Trashes
 ehthumbs.db
-Thumbs.db 
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Backup files
+*.bak
+*.backup 
