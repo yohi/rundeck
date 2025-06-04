@@ -72,11 +72,8 @@ vim .env
 ### 3. サービスの起動
 
 ```bash
-# サービスを起動
+# Docker Composeを使用してサービスを起動
 docker-compose up -d
-
-# ログを確認
-docker-compose logs -f
 ```
 
 ### 4. アクセス
@@ -115,36 +112,27 @@ Rundeckは事前認証モードで動作します：
 
 ## 🛠️ 管理コマンド
 
-### サービス管理
+### Docker Composeを使用した管理
 
 ```bash
-# サービス起動
-docker-compose up -d
-
-# サービス停止
-docker-compose down
+# サービス管理
+docker-compose up -d        # サービス起動
+docker-compose down         # サービス停止
+docker-compose restart     # サービス再起動
+docker-compose ps           # サービス状態確認
 
 # ログ確認
-docker-compose logs -f [service-name]
-
-# サービス状態確認
-docker-compose ps
+docker-compose logs -f      # 全サービスのログ
+docker-compose logs nginx   # Nginxのログ
+docker-compose logs oauth2-proxy  # OAuth2 Proxyのログ
+docker-compose logs rundeck # Rundeckのログ
 
 # 設定確認
-docker-compose config
-```
+docker-compose config       # 設定確認
 
-### データ管理
-
-```bash
-# データボリューム確認
-docker volume ls | grep rundeck
-
-# データバックアップ
-docker run --rm -v rundeck-data:/data -v $(pwd):/backup alpine tar czf /backup/rundeck-backup.tar.gz -C /data .
-
-# データリストア
-docker run --rm -v rundeck-data:/data -v $(pwd):/backup alpine tar xzf /backup/rundeck-backup.tar.gz -C /data
+# データ管理
+docker-compose exec rundeck tar -czf /tmp/backup.tar.gz /home/rundeck/server/data  # データバックアップ
+docker cp $(docker-compose ps -q rundeck):/tmp/backup.tar.gz ./backup.tar.gz      # バックアップファイルをホストにコピー
 ```
 
 ## 🔍 トラブルシューティング
@@ -181,17 +169,18 @@ docker run --rm -v rundeck-data:/data -v $(pwd):/backup alpine tar xzf /backup/r
 ### 設定確認
 
 ```bash
+# サービス状態確認
+docker-compose ps
+
+# AWS CLI設定確認
+aws sts get-caller-identity
+
 # Cognito設定確認
 aws cognito-idp describe-user-pool --user-pool-id $COGNITO_USER_POOL_ID
 aws cognito-idp describe-user-pool-client --user-pool-id $COGNITO_USER_POOL_ID --client-id $COGNITO_CLIENT_ID
 
 # ネットワーク確認
 docker network inspect saas-rundeck-v2_rundeck-network
-
-# ヘルスチェック
-curl http://localhost/health
-curl http://localhost:4180/ping
-curl http://localhost:4440/api/14/system/info
 ```
 
 ### よくあるエラー

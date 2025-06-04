@@ -66,15 +66,15 @@ for:
   adhoc:
     - allow: ['read', 'run'] # allow adhoc execution
   job:
-    - allow: ['read', 'run', 'create', 'update'] # allow job management
+    - allow: ['read', 'run'] # 有効なアクションのみに修正
   node:
     - allow: ['read', 'run'] # allow node operations
   project:
     - match:
         name: '.*'
-      allow: ['read', 'run'] # allow project operations
+      allow: ['read', 'update'] # または適切なアクションに置き換え
   storage:
-    - allow: ['read', 'create', 'update'] # allow storage management
+    - allow: ['read', 'run'] # 有効なアクションのみに修正
 by:
   group: ['deploy', 'build', 'rundeck-operators']
 
@@ -99,11 +99,11 @@ for:
   job:
     - allow: ['read', 'run', 'create', 'update', 'delete'] # allow full job management
   node:
-    - allow: ['read', 'run', 'create', 'update'] # allow node management
+    - allow: ['read', 'run'] # 有効なアクションのみに修正
   project:
     - match:
         name: '.*'
-      allow: ['read', 'run', 'admin'] # allow project administration
+      allow: ['read', 'admin']
   storage:
     - allow: ['read', 'create', 'update', 'delete'] # allow full storage management
 by:
