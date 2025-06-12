@@ -1,0 +1,28 @@
+services:
+  rundeck:
+    build:
+      context: ./rundeck
+      cache_from:
+        - ${RUNDECK_IMAGE_NAME}:latest
+      args:
+        BUILDKIT_INLINE_CACHE: 1
+        RUNDECK_VERSION: ${RUNDECK_VERSION:-5.12.0-20250512}
+    image: ${RUNDECK_IMAGE_NAME}:${BITBUCKET_BUILD_NUMBER}
+  nginx:
+    build:
+      context: ./nginx
+      cache_from:
+        - ${NGINX_IMAGE_NAME}:latest
+      args:
+        BUILDKIT_INLINE_CACHE: 1
+        NGINX_VERSION: ${NGINX_VERSION:-1.28.0}
+    image: ${NGINX_IMAGE_NAME}:${BITBUCKET_BUILD_NUMBER}
+  oauth2-proxy:
+    build:
+      context: ./oauth2-proxy
+      cache_from:
+        - ${OAUTH2_PROXY_IMAGE_NAME}:latest
+      args:
+        BUILDKIT_INLINE_CACHE: 1
+        OAUTH2_PROXY_VERSION: ${OAUTH2_PROXY_VERSION:-v7.4.0}
+    image: ${OAUTH2_PROXY_IMAGE_NAME}:${BITBUCKET_BUILD_NUMBER}

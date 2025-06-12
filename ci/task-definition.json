@@ -1,0 +1,273 @@
+{
+  "family": "rundeck-task",
+  "networkMode": "bridge",
+  "requiresCompatibilities": ["EC2"],
+  "cpu": "1024",
+  "memory": "2048",
+  "executionRoleArn": "arn:aws:iam::${AWS_ACCOUNT_ID}:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::${AWS_ACCOUNT_ID}:role/ecsTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "nginx",
+      "image": "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/rundeck-nginx:${IMAGE_TAG}",
+      "cpu": 256,
+      "memory": 512,
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 80,
+          "hostPort": 80,
+          "protocol": "tcp"
+        }
+      ],
+      "links": ["oauth2-proxy"],
+      "dependsOn": [
+        {
+          "containerName": "oauth2-proxy",
+          "condition": "HEALTHY"
+        }
+      ],
+      "healthCheck": {
+        "command": ["CMD-SHELL", "curl -f http://localhost/health || exit 1"],
+        "interval": 30,
+        "timeout": 10,
+        "retries": 3,
+        "startPeriod": 60
+      },
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/rundeck-nginx",
+          "awslogs-region": "${AWS_REGION}",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    },
+    {
+      "name": "oauth2-proxy",
+      "image": "quay.io/oauth2-proxy/oauth2-proxy:v7.4.0",
+      "cpu": 256,
+      "memory": 512,
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 4180,
+          "hostPort": 4180,
+          "protocol": "tcp"
+        }
+      ],
+      "links": ["rundeck"],
+      "dependsOn": [
+        {
+          "containerName": "rundeck",
+          "condition": "HEALTHY"
+        }
+      ],
+      "command": [
+        "--provider=oidc",
+        "--oidc-issuer-url=https://cognito-idp.${AWS_REGION}.amazonaws.com/${COGNITO_USER_POOL_ID}",
+        "--client-id=${COGNITO_CLIENT_ID}",
+        "--client-secret=${COGNITO_CLIENT_SECRET}",
+        "--http-address=0.0.0.0:4180",
+        "--redirect-url=http://localhost/oauth2/callback",
+        "--cookie-domain=.localhost",
+        "--cookie-secure=false",
+        "--cookie-httponly=true",
+        "--cookie-samesite=lax",
+        "--email-domain=*",
+        "--scope=openid email profile",
+        "--oidc-email-claim=email",
+        "--oidc-groups-claim=cognito:groups",
+        "--prefer-email-to-user=true",
+        "--set-xauthrequest=true",
+        "--set-authorization-header=true",
+        "--pass-user-headers=true",
+        "--pass-access-token=true",
+        "--pass-authorization-header=true",
+        "--pass-host-header=true",
+        "--session-store-type=cookie",
+        "--cookie-expire=24h",
+        "--cookie-refresh=1h",
+        "--cookie-name=_oauth2_proxy",
+        "--skip-provider-button=true",
+        "--reverse-proxy=true",
+        "--upstream=static://202",
+        "--request-logging=false",
+        "--auth-logging=false"
+      ],
+      "environment": [
+        {
+          "name": "OAUTH2_PROXY_COOKIE_SECRET",
+          "value": "${OAUTH2_PROXY_COOKIE_SECRET}"
+        }
+      ],
+      "healthCheck": {
+        "command": ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:4180/ping || exit 1"],
+        "interval": 30,
+        "timeout": 10,
+        "retries": 3,
+        "startPeriod": 60
+      },
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/rundeck-oauth2-proxy",
+          "awslogs-region": "${AWS_REGION}",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    },
+    {
+      "name": "rundeck",
+      "image": "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/rundeck-server:${IMAGE_TAG}",
+      "cpu": 512,
+      "memory": 1024,
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 4440,
+          "hostPort": 4440,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "RUNDECK_GRAILS_URL",
+          "value": "http://localhost"
+        },
+        {
+          "name": "RUNDECK_GUI_TITLE",
+          "value": "Rundeck with AWS Cognito"
+        },
+        {
+          "name": "RUNDECK_GUI_BRAND",
+          "value": "Cognito Rundeck"
+        },
+        {
+          "name": "RUNDECK_PREAUTH_ENABLED",
+          "value": "true"
+        },
+        {
+          "name": "RUNDECK_PREAUTH_ATTRIBUTE_NAME",
+          "value": "REMOTE_USER_GROUPS"
+        },
+        {
+          "name": "RUNDECK_PREAUTH_DELIMITER",
+          "value": ","
+        },
+        {
+          "name": "RUNDECK_PREAUTH_USERNAME_HEADER",
+          "value": "X-Forwarded-User"
+        },
+        {
+          "name": "RUNDECK_PREAUTH_ROLES_HEADER",
+          "value": "X-Forwarded-Roles"
+        },
+        {
+          "name": "RUNDECK_PREAUTH_REDIRECT_LOGOUT",
+          "value": "false"
+        },
+        {
+          "name": "RUNDECK_PREAUTH_REDIRECT_URL",
+          "value": ""
+        },
+        {
+          "name": "RUNDECK_PREAUTH_USERSYNC_ENABLED",
+          "value": "true"
+        },
+        {
+          "name": "RUNDECK_SECURITY_AUTHORIZATION_PREAUTHENTICATED_ENABLED",
+          "value": "true"
+        },
+        {
+          "name": "RUNDECK_SECURITY_AUTHORIZATION_PREAUTHENTICATED_DEFAULTROLES",
+          "value": "admin,user,architect,deploy,build"
+        },
+        {
+          "name": "RUNDECK_SECURITY_AUTHORIZATION_FORM_ENABLED",
+          "value": "false"
+        },
+        {
+          "name": "RUNDECK_SECURITY_AUTHORIZATION_PREAUTHENTICATED_USERNAMEHEADER",
+          "value": "X-Forwarded-User"
+        },
+        {
+          "name": "RUNDECK_SECURITY_AUTHORIZATION_PREAUTHENTICATED_ROLESHEADER",
+          "value": "X-Forwarded-Roles"
+        },
+        {
+          "name": "RUNDECK_SECURITY_AUTHORIZATION_PREAUTHENTICATED_ATTRIBUTENAME",
+          "value": "REMOTE_USER_GROUPS"
+        },
+        {
+          "name": "RUNDECK_SECURITY_AUTHORIZATION_PREAUTHENTICATED_DELIMITER",
+          "value": ","
+        },
+        {
+          "name": "RUNDECK_ACL_DIR",
+          "value": "/home/rundeck/server/config/acl"
+        }
+      ],
+      "mountPoints": [
+        {
+          "sourceVolume": "rundeck-data",
+          "containerPath": "/home/rundeck/server/data"
+        },
+        {
+          "sourceVolume": "rundeck-logs",
+          "containerPath": "/home/rundeck/var/logs"
+        },
+        {
+          "sourceVolume": "rundeck-plugins",
+          "containerPath": "/home/rundeck/libext"
+        }
+      ],
+      "healthCheck": {
+        "command": ["CMD-SHELL", "curl -f http://localhost:4440/ || exit 1"],
+        "interval": 30,
+        "timeout": 10,
+        "retries": 5,
+        "startPeriod": 120
+      },
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/rundeck-server",
+          "awslogs-region": "${AWS_REGION}",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ],
+  "volumes": [
+    {
+      "name": "rundeck-data",
+      "host": {
+        "sourcePath": "/opt/rundeck/data"
+      }
+    },
+    {
+      "name": "rundeck-logs",
+      "host": {
+        "sourcePath": "/opt/rundeck/logs"
+      }
+    },
+    {
+      "name": "rundeck-plugins",
+      "host": {
+        "sourcePath": "/opt/rundeck/plugins"
+      }
+    }
+  ],
+  "placementConstraints": [],
+  "tags": [
+    {
+      "key": "Environment",
+      "value": "production"
+    },
+    {
+      "key": "Application",
+      "value": "rundeck"
+    }
+  ]
+} 
