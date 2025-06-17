@@ -63,5 +63,3 @@ pipelines:
                 CLUSTER_NAME: ${CLUSTER_NAME}
                 SERVICE_NAME: ${SERVICE_NAME}
                 TASK_DEFINITION: 'task-definition-final.json'
-                after-script:
-                  - echo "Deployment completed successfully"
