@@ -3,7 +3,9 @@ services:
     build:
       context: ./rundeck
       cache_from:
-        - ${RUNDECK_IMAGE_NAME}:latest
+        - ${RUNDECK_IMAGE_NAME}:cache
+      cache_to:
+        - type=registry,ref=${RUNDECK_IMAGE_NAME}:cache,mode=max
       args:
         BUILDKIT_INLINE_CACHE: 1
         RUNDECK_VERSION: ${RUNDECK_VERSION:-5.12.0-20250512}
@@ -12,7 +14,9 @@ services:
     build:
       context: ./nginx
       cache_from:
-        - ${NGINX_IMAGE_NAME}:latest
+        - ${NGINX_IMAGE_NAME}:cache
+      cache_to:
+        - type=registry,ref=${NGINX_IMAGE_NAME}:cache,mode=max
       args:
         BUILDKIT_INLINE_CACHE: 1
         NGINX_VERSION: ${NGINX_VERSION:-1.28.0}
@@ -21,7 +25,9 @@ services:
     build:
       context: ./oauth2-proxy
       cache_from:
-        - ${OAUTH2_PROXY_IMAGE_NAME}:latest
+        - ${OAUTH2_PROXY_IMAGE_NAME}:cache
+      cache_to:
+        - type=registry,ref=${OAUTH2_PROXY_IMAGE_NAME}:cache,mode=max
       args:
         BUILDKIT_INLINE_CACHE: 1
         OAUTH2_PROXY_VERSION: ${OAUTH2_PROXY_VERSION:-v7.4.0}

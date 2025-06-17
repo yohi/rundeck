@@ -33,11 +33,11 @@ pipelines:
             # ECRのURL
             - ECR_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com
             # Rundeckのイメージ名
-            - export RUNDECK_IMAGE_NAME=${ECR_URI}/rundeck
+            - export RUNDECK_IMAGE_NAME=${ECR_URI}/saas-rundeck-${ENV}/rundeck
             # Nginxのイメージ名
-            - export NGINX_IMAGE_NAME=${ECR_URI}/nginx
+            - export NGINX_IMAGE_NAME=${ECR_URI}/saas-rundeck-${ENV}/nginx
             # OAuth2Proxyのイメージ名
-            - export OAUTH2_PROXY_IMAGE_NAME=${ECR_URI}/oauth2-proxy
+            - export OAUTH2_PROXY_IMAGE_NAME=${ECR_URI}/saas-rundeck-${ENV}/oauth2-proxy
             # ECRにログイン
             - docker run -e AWS_ACCESS_KEY_ID=${PIPELINES_AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${PIPELINES_AWS_SECRET_ACCESS_KEY} amazon/aws-cli ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${ECR_URI}
             # Composeインストール
@@ -48,14 +48,14 @@ pipelines:
             # Build
             - docker compose -f compose-build.yaml build
             # Tag
-            - docker tag ${RUNDECK_IMAGE_NAME}:${BITBUCKET_BUILD_NUMBER} ${RUNDECK_IMAGE_NAME}:latest
-            - docker tag ${NGINX_IMAGE_NAME}:${BITBUCKET_BUILD_NUMBER} ${NGINX_IMAGE_NAME}:latest
-            - docker tag ${OAUTH2_PROXY_IMAGE_NAME}:${BITBUCKET_BUILD_NUMBER} ${OAUTH2_PROXY_IMAGE_NAME}:latest
+            # - docker tag ${RUNDECK_IMAGE_NAME}:${BITBUCKET_BUILD_NUMBER} ${RUNDECK_IMAGE_NAME}:latest
+            # - docker tag ${NGINX_IMAGE_NAME}:${BITBUCKET_BUILD_NUMBER} ${NGINX_IMAGE_NAME}:latest
+            # - docker tag ${OAUTH2_PROXY_IMAGE_NAME}:${BITBUCKET_BUILD_NUMBER} ${OAUTH2_PROXY_IMAGE_NAME}:latest
             # Push
             - docker compose -f compose-build.yaml push
-            - docker push ${RUNDECK_IMAGE_NAME}:latest
-            - docker push ${NGINX_IMAGE_NAME}:latest
-            - docker push ${OAUTH2_PROXY_IMAGE_NAME}:latest
+            # - docker push ${RUNDECK_IMAGE_NAME}:latest
+            # - docker push ${NGINX_IMAGE_NAME}:latest
+            # - docker push ${OAUTH2_PROXY_IMAGE_NAME}:latest
       - step:
           name: Deploy to ECS
           image: atlassian/default-image:5
