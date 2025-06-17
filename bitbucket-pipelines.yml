@@ -40,6 +40,12 @@ pipelines:
             - export OAUTH2_PROXY_IMAGE_NAME=${ECR_URI}/oauth2-proxy
             # ECRにログイン
             - docker run -e AWS_ACCESS_KEY_ID=${PIPELINES_AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${PIPELINES_AWS_SECRET_ACCESS_KEY} amazon/aws-cli ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${ECR_URI}
+            - DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker}
+            - mkdir -p ${DOCKER_CONFIG}/cli-plugins
+            - curl -SL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION:-v2.37.1}/docker-compose-linux-x86_64 -o ${DOCKER_CONFIG}/cli-plugins/docker-compose
+            - chmod +x ${DOCKER_CONFIG}/cli-plugins/docker-compose
+            - docker version
+            - docker help
             # Build
             - docker compose -f compose-build.yaml build
             # Tag
