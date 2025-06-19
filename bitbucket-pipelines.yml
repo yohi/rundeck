@@ -21,9 +21,6 @@ pipelines:
           caches:
             - docker
           script:
-            # BuildKitを有効化
-            - export DOCKER_BUILDKIT=1
-            - export COMPOSE_DOCKER_CLI_BUILD=1
             # Rundeckのバージョン（デフォルトは5.12.0-20250512）
             - export RUNDECK_VERSION=${RUNDECK_VERSION:-5.12.0-20250512}
             # Nginxのバージョン（デフォルトは1.28.0）
