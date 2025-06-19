@@ -57,6 +57,25 @@ pipelines:
             # - docker push ${NGINX_IMAGE_NAME}:latest
             # - docker push ${OAUTH2_PROXY_IMAGE_NAME}:latest
       - step:
+          name: Build and Push to ECR
+          image: atlassian/default-image:5
+          services:
+            - docker
+          caches:
+            - docker
+          script:
+            - export DOCKER_BUILDKIT=1
+            - export COMPOSE_DOCKER_CLI_BUILD=1
+            - ECR_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com
+            - export RUNDECK_IMAGE_NAME=${ECR_URI}/saas-rundeck-${ENV}/rundeck
+            - export NGINX_IMAGE_NAME=${ECR_URI}/saas-rundeck-${ENV}/nginx
+            - export OAUTH2_PROXY_IMAGE_NAME=${ECR_URI}/saas-rundeck-${ENV}/oauth2-proxy
+            - docker run -e AWS_ACCESS_KEY_ID=${PIPELINES_AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${PIPELINES_AWS_SECRET_ACCESS_KEY} amazon/aws-cli ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${ECR_URI}
+            # Build
+            - docker buildx bake -f compose-build.yaml
+            # Push
+            - docker buildx bake -f compose-build.yaml --push
+      - step:
           name: Deploy to ECS
           image: atlassian/default-image:5
           script:
