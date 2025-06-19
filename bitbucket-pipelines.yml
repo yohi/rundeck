@@ -29,7 +29,7 @@ pipelines:
             # Nginxのバージョン（デフォルトは1.28.0）
             - export NGINX_VERSION=${NGINX_VERSION:-1.28.0}
             # OAuth2Proxyのバージョン（デフォルトはv7.4.0）
-            - export OAUTH2_PROXY_VERSION=${OAUTH_PROXY_VERSION:-v7.4.0}
+            - export OAUTH2_PROXY_VERSION=${OAUTH2_PROXY_VERSION:-v7.4.0}
             # ECRのURL
             - ECR_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com
             # Rundeckのイメージ名
@@ -72,7 +72,7 @@ pipelines:
             # Nginxのバージョン（デフォルトは1.28.0）
             - export NGINX_VERSION=${NGINX_VERSION:-1.28.0}
             # OAuth2Proxyのバージョン（デフォルトはv7.4.0）
-            - export OAUTH2_PROXY_VERSION=${OAUTH_PROXY_VERSION:-v7.4.0}
+            - export OAUTH2_PROXY_VERSION=${OAUTH2_PROXY_VERSION:-v7.4.0}
             - ECR_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com
             - export RUNDECK_IMAGE_NAME=${ECR_URI}/saas-rundeck-${ENV}/rundeck
             - export NGINX_IMAGE_NAME=${ECR_URI}/saas-rundeck-${ENV}/nginx
