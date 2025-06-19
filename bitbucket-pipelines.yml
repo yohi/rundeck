@@ -21,51 +21,23 @@ pipelines:
           caches:
             - docker
           script:
-            # BuildKitを有効化
-            - export DOCKER_BUILDKIT=1
-            - export COMPOSE_DOCKER_CLI_BUILD=1
-            # # Rundeckのバージョン（デフォルトは5.12.0-20250512）
-            # - export RUNDECK_VERSION=${RUNDECK_VERSION:-5.12.0-20250512}
-            # # Nginxのバージョン（デフォルトは1.28.0）
-            # - export NGINX_VERSION=${NGINX_VERSION:-1.28.0}
-            # # OAuth2Proxyのバージョン（デフォルトはv7.4.0）
-            # - export OAUTH2_PROXY_VERSION=${OAUTH_PROXY_VERSION:-v7.4.0}
+            # Rundeckのバージョン（デフォルトは5.12.0-20250512）
+            - export RUNDECK_VERSION=${RUNDECK_VERSION:-5.12.0-20250512}
+            # Nginxのバージョン（デフォルトは1.28.0）
+            - export NGINX_VERSION=${NGINX_VERSION:-1.28.0}
+            # OAuth2Proxyのバージョン（デフォルトはv7.4.0）
+            - export OAUTH2_PROXY_VERSION=${OAUTH2_PROXY_VERSION:-v7.4.0}
             # ECRのURL
             - ECR_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com
             # Rundeckのイメージ名
-            - export RUNDECK_IMAGE_NAME=${ECR_URI}/rundeck
+            - export RUNDECK_IMAGE_NAME=${ECR_URI}/saas-rundeck-${ENV}/rundeck
             # Nginxのイメージ名
-            - export NGINX_IMAGE_NAME=${ECR_URI}/nginx
+            - export NGINX_IMAGE_NAME=${ECR_URI}/saas-rundeck-${ENV}/nginx
             # OAuth2Proxyのイメージ名
-            - export OAUTH2_PROXY_IMAGE_NAME=${ECR_URI}/oauth2-proxy
+            - export OAUTH2_PROXY_IMAGE_NAME=${ECR_URI}/saas-rundeck-${ENV}/oauth2-proxy
             # ECRにログイン
             - docker run -e AWS_ACCESS_KEY_ID=${PIPELINES_AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${PIPELINES_AWS_SECRET_ACCESS_KEY} amazon/aws-cli ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${ECR_URI}
-            - DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker}
-            - mkdir -p ${DOCKER_CONFIG}/cli-plugins
-            - curl -SL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION:-v2.37.1}/docker-compose-linux-x86_64 -o ${DOCKER_CONFIG}/cli-plugins/docker-compose
-            - chmod +x ${DOCKER_CONFIG}/cli-plugins/docker-compose
-            - docker version
-            - docker help
-            # Build
-            - docker compose -f compose-build.yaml build
-            # Tag
-            - docker tag ${RUNDECK_IMAGE_NAME}:${BITBUCKET_BUILD_NUMBER} ${RUNDECK_IMAGE_NAME}:latest
-            - docker tag ${NGINX_IMAGE_NAME}:${BITBUCKET_BUILD_NUMBER} ${NGINX_IMAGE_NAME}:latest
-            - docker tag ${OAUTH2_PROXY_IMAGE_NAME}:${BITBUCKET_BUILD_NUMBER} ${OAUTH2_PROXY_IMAGE_NAME}:latest
-            # Push
-            - docker push ${RUNDECK_IMAGE_NAME}:${BITBUCKET_BUILD_NUMBER} ${RUNDECK_IMAGE_NAME}:latest ${NGINX_IMAGE_NAME}:${BITBUCKET_BUILD_NUMBER} ${NGINX_IMAGE_NAME}:latest ${OAUTH2_PROXY_IMAGE_NAME}:${BITBUCKET_BUILD_NUMBER} ${OAUTH2_PROXY_IMAGE_NAME}:latest
-      - step:
-          name: Deploy to ECS
-          image: atlassian/default-image:5
-          script:
-            # Replace environment variables in task definition
-            - envsubst < task-definition.json > task-definition-final.json
-            # ECSにデプロイ
-            - pipe: atlassian/aws-ecs-deploy:1.9.0
-              variables:
-                AWS_ACCESS_KEY_ID: ${PIPELINES_AWS_ACCESS_KEY_ID}
-                AWS_SECRET_ACCESS_KEY: ${PIPELINES_AWS_SECRET_ACCESS_KEY}
-                AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
-                CLUSTER_NAME: ${CLUSTER_NAME}
-                SERVICE_NAME: ${SERVICE_NAME}
-                TASK_DEFINITION: 'task-definition-final.json'
+            # Builderの作成
+            - docker buildx create --name mybuilder --driver docker-container --use
+            # Build and Push
+            - docker buildx bake -f compose-build.yaml
