@@ -77,6 +77,7 @@ pipelines:
             - export RUNDECK_IMAGE_NAME=${ECR_URI}/saas-rundeck-${ENV}/rundeck
             - export NGINX_IMAGE_NAME=${ECR_URI}/saas-rundeck-${ENV}/nginx
             - export OAUTH2_PROXY_IMAGE_NAME=${ECR_URI}/saas-rundeck-${ENV}/oauth2-proxy
+            - docker version
             - docker run -e AWS_ACCESS_KEY_ID=${PIPELINES_AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${PIPELINES_AWS_SECRET_ACCESS_KEY} amazon/aws-cli ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${ECR_URI}
             # Build
             - docker buildx create --name mybuilder --driver docker-container --use
